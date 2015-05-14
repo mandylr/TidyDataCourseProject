@@ -1,99 +1,68 @@
 ## Getting Data - taking all the files and making 1 data table
-setwd("./Getting and Cleaning Data/UCI HAR Dataset")
+setwd("./Getting_and_Cleaning_Data/UCI HAR Dataset")
 
-## Putting together test data
+## Fucntion to load and merge test and train data, 
+## Note: The first column is subject # and the last column is the activity
 
+load_data <- function(test = "test", train = "train"){
+    test_files <- list.files(test, pattern = '\\.txt', full.names = TRUE)
+    test_data <- data.frame(matrix(ncol = 0, nrow = 2947))
+    for(file in test_files){
+        test_data <- cbind(test_data, read.table(file, 
+                                      header = FALSE,
+                                      sep = "",
+                                      stringsAsFactors = FALSE,
+                                      ))
+    }
+    
+    train_files <- list.files(train, pattern = "\\.txt", full.names = TRUE)
+    train_data <- data.frame(matrix(ncol = 0, nrow = 7352))
+    for(file in train_files){
+        train_data <- cbind(train_data, read.table(file, 
+                                                 header = FALSE,
+                                                 sep = "",
+                                                 stringsAsFactors = FALSE,
+        ))
+    }
+    
+    rbind(test_data, train_data)
+}
+
+## Test and train data loaded
+data <- load_data()
+
+#Load features data for column names
 features <- read.table("features.txt", header = FALSE, sep = "", stringsAsFactors = FALSE)
 
-activity_labels <- read.table("activity_labels.txt", header = FALSE,
-                              stringsAsFactors = FALSE, 
-                              col.names = c("Number", "Activity"))
+# Name the columns of data frame using features
+colnames(data) <- c("Subject", features[[2]], "Activity")
 
-#Build Data - Start with Subject Numbers
-test_subject <- read.table("./test/subject_test.txt", 
-                     header = FALSE, 
-                     sep = "", 
-                     stringsAsFactors = FALSE, 
-                     col.names = "Subject")
-
-#Add Activity Number
-test_activity <- read.table("./test/y_test.txt", 
-                           header = F, 
-                           sep = "",
-                           stringsAsFactors = FALSE,
-                           col.names = "Activity")
-
-#Add feature data - using feature labels
-
-test_feature_data <- read.table("./test/X_test.txt", header = F, sep = "",
-                                stringsAsFactors = FALSE, 
-                                col.names = features[[2]])
-
-#Complete test data
-test_data <- cbind(test_subject, test_activity, test_feature_data)
-
-#Remove intermediate data
-test_subject = NULL
-test_activity = NULL
-test_feature_data = NULL
-
-#Repeat steps above with train data
-train_subject <- read.table("./train/subject_train.txt", 
-                           header = FALSE, 
-                           sep = "", 
-                           stringsAsFactors = FALSE, 
-                           col.names = "Subject")
-
-#Add Activity Number
-train_activity <- read.table("./train/y_train.txt", 
-                            header = F, 
-                            sep = "",
-                            stringsAsFactors = FALSE,
-                            col.names = "Activity")
-
-#Add feature data - using feature labels
-train_feature_data <- read.table("./train/X_train.txt", header = F, sep = "",
-                                stringsAsFactors = FALSE, 
-                                col.names = features[[2]])
-
-#Complete train data
-train_data <- cbind(train_subject, train_activity, train_feature_data)
-
-#Remove intermediate data
-train_subject = NULL
-train_activity = NULL
-train_feature_data = NULL
-
-# Complete test and train data
-data <- rbind(test_data, train_data)
-
-#Remove sep train and test data from memory
-test_data <- NULL
-train_data <- NULL
-
-#Extract mean and std data
+#Extract mean and std data and re-order so columns are:
+## Subject, Activity, mean variables, std variables
 means <- grep("mean", names(data))
 stds <- grep("std", names(data))
 
-data <- data[, c(1,2, means, stds)]
+data <- data[, c(1,563, means, stds)]
 
-# Adding activity Labels to Dataframe
-act_length <- sapply(split(data, data$Activity), nrow) 
-Activity <- c(rep(activity_labels[,2], act_length))
+#Laad the activity lables to rename the activity numbers with names
+activity_labels <- read.table("activity_labels.txt", header = FALSE,
+                              stringsAsFactors = FALSE, 
+                              col.names = c("Number", "Activity"))
+act <- activity_labels[[2]]
 
-# Order data via Activity and change Numbers to Activity name
+# Adding Activiy label to data by numerical order
 data <- data[order(data$Activity),]
-data$Activity <- Activity
+data$Activity <- act[data$Activity]
 
 #Order by subject number
-data <- data[order(data$Subject),]
+data <- data[order(data$Subject, data$Activity),]
 
-
-write.csv(data, file = "UCI_HAR_Dataset_tidy.csv")
+## If you want the tidy data - not the averaged data, run code below:
+#write.csv(data, file = "UCI_HAR_Dataset_tidy.csv")
 
 ## find the average of each measurement for each subject doing each activity
 ## use plyr package to subset and average
-## numcolwise only takes the mean by numeric columns
+## numcolwise only takes the mean of numeric columns
 
 library(plyr)
 
