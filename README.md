@@ -16,7 +16,8 @@
 ```{r} 
     data$Activity <- act[data$Activity]
 ```
-        - where act is the list of activity names where act[n] corresponds to the name of activity n
+
+    - Where act is the list of activity names where act[n] corresponds to the name of activity n
 
 5. Order the data by subject # (1:30)
     - via the order() function
@@ -26,4 +27,5 @@
 ```{r}
     avg_data <- ddply(data, .(Subject, Activity), numcolwise(mean))
 ```
+
     - This takes the average of each activity for each subject in all the numeric columns (i.e. the feaatures columns)
